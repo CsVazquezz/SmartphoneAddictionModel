@@ -3,9 +3,5 @@ __pycache__/
 outputs/
 .DS_Store
 
-# LaTeX build files
-report/*.aux
-report/*.log
-report/*.out
-report/*.fls
-report/*.fdb_latexmk
+# LaTeX sources and build files -- only the compiled report.pdf is tracked
+report/
