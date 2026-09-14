@@ -32,7 +32,11 @@ def main():
     print("\nAUC   train %.5f   val %.5f   (test = Kaggle leaderboard)"
           % (roc_auc(y_train, model.predict_proba(X_train)),
              roc_auc(y_val, model.predict_proba(X_val))))
-    print(pd.Series(model.params, index=["intercept"] + d["columns"]).round(4))
+    names = ["intercept"] + d["columns"]
+    if len(model.params) == len(names):
+        print(pd.Series(model.params, index=names).round(4))
+    else:
+        print("%d parameters after polynomial features" % len(model.params))
 
     data.write_submission(d["test_ids"], model.predict_proba(d["test"]), out)
     print(f"\nwrote {out}")
