@@ -10,6 +10,8 @@ ID = "id"
 CAT = ["gender", "stress_level", "academic_work_impact"]   # non-numeric columns
 N_PC = 7
 
+TRAIN_FRAC = 0.8
+
 
 def fit_prep(df, features):
     """Learn the preprocessing values from the training data."""
@@ -64,20 +66,34 @@ def apply_prep(df, p, features):
     return X, columns
 
 
+def split(df):
+    """First 80% of train.csv for training, last 20% for validation."""
+    n = int(len(df) * TRAIN_FRAC)
+    return df.iloc[:n], df.iloc[n:]
+
+
 def load():
-    """-> (X_train, y_train, X_test, test_ids, column_names)"""
-    df_train = pd.read_csv(DATA / "train.csv")
+    """-> {"train": (X, y), "val": (X, y), "test": X, "test_ids", "columns"}"""
+    df = pd.read_csv(DATA / "train.csv")
     df_test = pd.read_csv(DATA / "test.csv")
 
-    features = [c for c in df_train.select_dtypes("number").columns
+    features = [c for c in df.select_dtypes("number").columns
                 if c not in (ID, TARGET)]
 
-    prep = fit_prep(df_train, features)
-    X_train, columns = apply_prep(df_train, prep, features)
-    X_test, _ = apply_prep(df_test, prep, features)
-    y_train = df_train[TARGET].to_numpy(dtype=float)
+    df_train, df_val = split(df)
 
-    return X_train, y_train, X_test, df_test[ID], columns
+    prep = fit_prep(df_train, features)          # train slice only, or it leaks
+    X_train, columns = apply_prep(df_train, prep, features)
+    X_val, _ = apply_prep(df_val, prep, features)
+    X_test, _ = apply_prep(df_test, prep, features)
+
+    return {
+        "train": (X_train, df_train[TARGET].to_numpy(dtype=float)),
+        "val": (X_val, df_val[TARGET].to_numpy(dtype=float)),
+        "test": X_test,               # no labels: Kaggle scores this one
+        "test_ids": df_test[ID],
+        "columns": columns,
+    }
 
 
 def write_submission(ids, probs, path):
